@@ -22,6 +22,7 @@ Documentation
 Version History
 ---------------
 
+* [v1.0.1](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.0.1) - Minor bug fix in <VespaMotors>.
 * [v1.0.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.0.0) - First release.
 
 License Information

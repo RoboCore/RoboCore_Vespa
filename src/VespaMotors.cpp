@@ -4,7 +4,7 @@
 * Library to use the motors of the Vespa board.
 * 
 * Copyright 2021 RoboCore.
-* Written by Francois (27/09/21).
+* Written by Francois (25/10/21).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -179,21 +179,7 @@ void VespaMotors::stop(void){
 //         (speedB) : the speed of the right motor (-100-100%) [int8_t]
 //  Note: a negative value sets the motor to move backwards
 void VespaMotors::turn(int8_t speedA, int8_t speedB){
-  // update the directions
-  if(speedA >= 0){
-    this->_setDirectionLeft(VespaMotors::FORWARD);
-  } else {
-    speedA *= -1; // update
-    this->_setDirectionLeft(VespaMotors::BACKWARD);
-  }
-  if(speedB >= 0){
-    this->_setDirectionRight(VespaMotors::FORWARD);
-  } else {
-    speedB *= -1; // update
-    this->_setDirectionRight(VespaMotors::BACKWARD);
-  }
-
-  // update the speeds (values are automatically constrained)
+  // update both speeds (the values and the directions are automatically constrained)
   this->setSpeedLeft(speedA);
   this->setSpeedRight(speedB);
 }
