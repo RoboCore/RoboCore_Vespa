@@ -2,7 +2,7 @@
 #define VESPA_H
 
 /*******************************************************************************
-* RoboCore - Vespa Library (v1.0)
+* RoboCore - Vespa Library (v1.1)
 * 
 * Library to use the functions of the Vespa board.
 * 
@@ -26,6 +26,9 @@
 * along with "RoboCore-Vespa-lib". If not, see <https://www.gnu.org/licenses/>
 * 
 * Versions
+*   v1.1  - Updated <VespaBattery::readVoltage()> to always use the bit width
+*           defined in the library and to not interfere in external analog
+*           readings (<analogRead()> uses 12 bits by default).
 *   v1.0  - Based on the Arduino implementation of the ESP32.
 *           ( https://github.com/espressif/arduino-esp32/blob/11f89cddf6f331bde53c09b2edf6107952867269/cores/esp32/esp32-hal-ledc.h )
 *         - There is no option to change the PWM channels, but it might be

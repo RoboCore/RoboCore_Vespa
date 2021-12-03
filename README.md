@@ -22,6 +22,7 @@ Documentation
 Version History
 ---------------
 
+* [v1.1.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.1.0) - Updated <VespaBattery::readVoltage()> to always use the defined bit width.
 * [v1.0.1](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.0.1) - Minor bug fix in <VespaMotors>.
 * [v1.0.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.0.0) - First release.
 

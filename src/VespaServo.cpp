@@ -1,5 +1,5 @@
 /*******************************************************************************
-* RoboCore Vespa Servo Library (v1.0)
+* RoboCore Vespa Servo Library (v1.1)
 * 
 * Library to use servo motors with the Vespa board.
 * 

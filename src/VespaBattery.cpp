@@ -1,10 +1,10 @@
 /*******************************************************************************
-* RoboCore Vespa Battery Library (v1.0)
+* RoboCore Vespa Battery Library (v1.1)
 * 
 * Library to read the battery voltage of the Vespa board.
 * 
 * Copyright 2021 RoboCore.
-* Written by Francois (28/09/21).
+* Written by Francois (03/12/21).
 * Based on the example from @DaveCalaway (https://github.com/espressif/arduino-esp32/issues/1804)
 * 
 * 
@@ -28,6 +28,10 @@
 // Libraries
 
 #include "RoboCore_Vespa.h"
+
+extern "C" {
+  #include <soc/sens_reg.h>
+}
 
 // --------------------------------------------------
 // --------------------------------------------------
@@ -165,6 +169,14 @@ uint8_t VespaBattery::readCapacity(void){
 // Read the voltage of the battery (in mV)
 //  @returns the voltage of the battery (in mV) [uint32_t]
 uint32_t VespaBattery::readVoltage(void){
+  // get the current ADC configuration
+  uint32_t adc1_ctrl_register = READ_PERI_REG(SENS_SAR_READ_CTRL_REG);
+  uint32_t adc1_bit_width = adc1_ctrl_register & 0x00030000; // get the current bit width
+  adc1_bit_width >>= 16; // convert to LSB[0:1]
+
+  // set the ADC to the bit width for the Vespa
+  adc1_config_width(VESPA_BATTERY_ADC_WIDTH);
+
   // read the analog pin
   int32_t value = adc1_get_raw(VESPA_BATTERY_ADC_CHANNEL);
 
@@ -183,6 +195,10 @@ uint32_t VespaBattery::readVoltage(void){
   uint32_t voltage = esp_adc_cal_raw_to_voltage(value, this->_adc_characteristics);
   voltage *= VESPA_BATTERY_VOLTAGE_CONVERSION; // convert the value considering the internal circuit
   voltage /= 1000;
+
+  // return the ADC to the previous configuration
+  adc1_config_width((adc_bits_width_t)adc1_bit_width);
+
   return voltage;
 }
 
