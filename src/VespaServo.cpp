@@ -1,10 +1,10 @@
 /*******************************************************************************
-* RoboCore Vespa Servo Library (v1.1)
+* RoboCore Vespa Servo Library (v1.2)
 * 
 * Library to use servo motors with the Vespa board.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (22/10/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (14/03/2024).
 * Based on the library by John K. Bennett (@jkb-git).
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -118,7 +118,7 @@ VespaServo::~VespaServo(void){
 //  @param (pin) : the pin to attach [uint8_t]
 //  @returns true if the pin was attached [bool]
 bool VespaServo::attach(uint8_t pin){
-  return this->attach(pin, VESPA_SERVO_PULSE_WIDTH_DEFAULT_MIN, VESPA_SERVO_PULSE_WIDTH_DEFAULT_MAX);
+  return this->attach(pin, VESPA_SERVO_PULSE_WIDTH_MIN, VESPA_SERVO_PULSE_WIDTH_MAX);
 }
 
 // --------------------------------------------------

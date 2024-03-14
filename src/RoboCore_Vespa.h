@@ -2,12 +2,12 @@
 #define VESPA_H
 
 /*******************************************************************************
-* RoboCore - Vespa Library (v1.1)
+* RoboCore - Vespa Library (v1.2)
 * 
 * Library to use the functions of the Vespa board.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (08/10/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (14/03/2024).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -26,6 +26,8 @@
 * along with "RoboCore-Vespa-lib". If not, see <https://www.gnu.org/licenses/>
 * 
 * Versions
+*   v1.2  - Updated <VespaServo::attach()> to use by default <PULSE_WIDTH_MAX>
+*           and <PULSE_WIDTH_MIN> instead of <PULSE_WIDTH_DEFAULT_xxx>.
 *   v1.1  - Updated <VespaBattery::readVoltage()> to always use the bit width
 *           defined in the library and to not interfere in external analog
 *           readings (<analogRead()> uses 12 bits by default).
@@ -76,8 +78,6 @@ extern "C" {
 #define VESPA_MOTORS_CHANNEL_B (15)
 
 #define VESPA_SERVO_DEFAULT_CHANNEL (13)
-#define VESPA_SERVO_PULSE_WIDTH_DEFAULT_MAX (2000) // [us]
-#define VESPA_SERVO_PULSE_WIDTH_DEFAULT_MIN (1000) // [us]
 #define VESPA_SERVO_PULSE_WIDTH_MAX (2500) // [us]
 #define VESPA_SERVO_PULSE_WIDTH_MIN (500) // [us]
 #define VESPA_SERVO_QTY (4)

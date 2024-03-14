@@ -1,10 +1,10 @@
 /*******************************************************************************
-* RoboCore Vespa Motors Library (v1.1)
+* RoboCore Vespa Motors Library (v1.2)
 * 
 * Library to use the motors of the Vespa board.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (25/10/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (25/10/2021).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").

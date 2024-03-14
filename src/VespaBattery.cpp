@@ -1,10 +1,10 @@
 /*******************************************************************************
-* RoboCore Vespa Battery Library (v1.1)
+* RoboCore Vespa Battery Library (v1.2)
 * 
 * Library to read the battery voltage of the Vespa board.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (03/12/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (03/12/2021).
 * Based on the example from @DaveCalaway (https://github.com/espressif/arduino-esp32/issues/1804)
 * 
 * 

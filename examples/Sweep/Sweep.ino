@@ -3,8 +3,8 @@
 * 
 * Sweep two servos simultaneously but in opposite directions.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (22/10/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (14/03/2024).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -38,7 +38,7 @@ VespaServo servo2;
 
 void setup(){
   // Note: some servos might require different MIN and MAX pulses (in [ms])
-  //       * the default values are {1000,2000}, the maximum values are {500,2500}
+  //       * the default values are the maximum values: {500,2500}
   servo1.attach(VESPA_SERVO_S1); // servo on pin 26, with default min and max
   servo2.attach(VESPA_SERVO_S2, 1000, 2000); // servo on pin 25, with min=1000 and max=2000
   
