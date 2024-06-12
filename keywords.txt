@@ -15,6 +15,24 @@ BATTERY_UNDEFINED	LITERAL1
 BATTERY_LIPO	LITERAL1
 
 
+VespaButton	KEYWORD1
+
+on_change	KEYWORD2
+
+pressed	KEYWORD2
+setActiveMode	KEYWORD2
+setDebounce	KEYWORD2
+
+
+VespaLED	KEYWORD1
+
+blink	KEYWORD2
+on	KEYWORD2
+off	KEYWORD2
+toggle	KEYWORD2
+update	KEYWORD2
+
+
 VespaMotors	KEYWORD1
 
 backward	KEYWORD2

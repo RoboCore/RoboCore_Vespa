@@ -2,12 +2,11 @@
 #define VESPA_H
 
 /*******************************************************************************
-* RoboCore - Vespa Library (v1.2)
+* RoboCore - Vespa Library (v1.3)
 * 
 * Library to use the functions of the Vespa board.
 * 
 * Copyright 2024 RoboCore.
-* Written by Francois (14/03/2024).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -24,26 +23,6 @@
 * 
 * You should have received a copy of the GNU Lesser General Public License
 * along with "RoboCore-Vespa-lib". If not, see <https://www.gnu.org/licenses/>
-* 
-* Versions
-*   v1.2  - Updated <VespaServo::attach()> to use by default <PULSE_WIDTH_MAX>
-*           and <PULSE_WIDTH_MIN> instead of <PULSE_WIDTH_DEFAULT_xxx>.
-*   v1.1  - Updated <VespaBattery::readVoltage()> to always use the bit width
-*           defined in the library and to not interfere in external analog
-*           readings (<analogRead()> uses 12 bits by default).
-*   v1.0  - Based on the Arduino implementation of the ESP32.
-*           ( https://github.com/espressif/arduino-esp32/blob/11f89cddf6f331bde53c09b2edf6107952867269/cores/esp32/esp32-hal-ledc.h )
-*         - There is no option to change the PWM channels, but it might be
-*           useful to update them without needing to recompile.
-*         - By default, channels 14 and 15 are used so that there is a lesser
-*           chance of collision with other libraries (e.g. Servo).
-*         - By default, the servos use channel 13 or lower to decrease the chance
-*           of collision with other libraries.
-*         - Only four servos can be used simultaneously at the moment (S1 to S4).
-*         - The ADC1 is configured internally for reading the pin 34 (Vbat).
-*           This means that any changes in the library or externally (user code)
-*           might interfere with the reading within the library.
-*
 *******************************************************************************/
 
 #if !defined(ARDUINO_ESP32_DEV) // ESP32
@@ -59,25 +38,37 @@ extern "C" {
   #include <stdarg.h>
   #include <stdint.h>
   #include <stdlib.h>
-  
-  #include <esp_adc_cal.h>
+
+  #include <esp_arduino_version.h>
+
+  #include <esp32-hal-adc.h>
   #include <esp32-hal-ledc.h>
 }
+
+#ifdef ESP_ARDUINO_VERSION_MAJOR
+#if ESP_ARDUINO_VERSION_MAJOR < 3
+#warning RoboCore Vespa v1.3 is meant to use the Arduino ESP package v3.0+
+#endif
+#endif
 
 // --------------------------------------------------
 // Macros
 
-#define VESPA_BATTERY_ADC_ATTENUATION (ADC_ATTEN_DB_11)
-#define VESPA_BATTERY_ADC_CHANNEL (ADC1_CHANNEL_6)
-#define VESPA_BATTERY_ADC_UNIT (ADC_UNIT_1)
-#define VESPA_BATTERY_ADC_WIDTH (ADC_WIDTH_BIT_11)
+#define VESPA_VERSION_MAJOR 1 // (X.x.x)
+#define VESPA_VERSION_MINOR 3 // (x.X.x)
+#define VESPA_VERSION_PATCH 0 // (x.x.X)
+
+#define VESPA_BATTERY_ADC_ATTENUATION (ADC_11db)
 #define VESPA_BATTERY_PIN (34)
 #define VESPA_BATTERY_VOLTAGE_CONVERSION (5702) // Vin = Vout * (R1+R2)/R2
+
+#define VESPA_BUTTON_PIN (35)
+
+#define VESPA_LED_PIN (15)
 
 #define VESPA_MOTORS_CHANNEL_A (14)
 #define VESPA_MOTORS_CHANNEL_B (15)
 
-#define VESPA_SERVO_DEFAULT_CHANNEL (13)
 #define VESPA_SERVO_PULSE_WIDTH_MAX (2500) // [us]
 #define VESPA_SERVO_PULSE_WIDTH_MIN (500) // [us]
 #define VESPA_SERVO_QTY (4)
@@ -92,7 +83,7 @@ extern "C" {
 // Enumerators
 
 enum BatteryType : uint8_t {
-  BATTERY_UNDEFINED = 0, 
+  BATTERY_UNDEFINED = 0,
   BATTERY_LIPO
 };
 
@@ -101,21 +92,56 @@ enum BatteryType : uint8_t {
 
 class VespaBattery {
   public:
-    void (*handler_critical)(uint8_t); // critical voltage (capacity)
     VespaBattery(void);
-    VespaBattery(uint32_t);
     ~VespaBattery(void);
-    uint8_t getCalibrationType(void);
-    uint32_t getReferenceVoltage(void);
     uint8_t readCapacity(void);
     uint32_t readVoltage(void);
     bool setBatteryType(uint8_t);
 
+    void (*handler_critical)(uint8_t); // critical voltage (capacity)
+
   private:
-    esp_adc_cal_characteristics_t *_adc_characteristics;
-    esp_adc_cal_value_t _adc_calibration_type;
     uint8_t _pin;
     uint8_t _battery_type;
+};
+
+// --------------------------------------------------
+// Class - Vespa Button
+
+class VespaButton {
+  public:
+    VespaButton(void);
+    VespaButton(uint8_t, uint8_t = INPUT);
+    ~VespaButton(void);
+    bool pressed(void);
+    bool setActiveMode(uint8_t);
+    void setDebounce(uint16_t);
+
+    void (*on_change)(bool);
+
+  private:
+    uint8_t _pin, _active_mode;
+    uint16_t _debounce;
+    bool _last_state;
+};
+
+// --------------------------------------------------
+// Class - Vespa LED
+
+class VespaLED {
+  public:
+    VespaLED(void);
+    VespaLED(uint8_t);
+    ~VespaLED(void);
+    void blink(uint32_t);
+    void on(void);
+    void off(void);
+    void toggle(void);
+    void update(void);
+
+  private:
+    uint8_t _pin, _state;
+    uint32_t _stop_time, _delay;
 };
 
 // --------------------------------------------------
@@ -144,10 +170,10 @@ class VespaMotors {
     uint8_t _pwm_resolution;
     uint16_t _max_duty_cyle;
 
-    void _attachPin(uint8_t *);
+    bool _attachPin(uint8_t *);
+    bool _configurePWM(void);
     void _setDirectionLeft(uint8_t);
     void _setDirectionRight(uint8_t);
-    void _configurePWM(void);
 };
 
 // --------------------------------------------------
@@ -156,22 +182,20 @@ class VespaMotors {
 class VespaServo {
   public:
     VespaServo(void);
-    VespaServo(uint8_t);
     ~VespaServo(void);
     bool attach(uint8_t);
     bool attach(uint8_t, uint16_t, uint16_t);
     bool attached(void);
     void detach(void);
-    uint8_t getChannel(void);
     void write(uint16_t);
     
   private:
     static uint8_t _servo_count;
     static VespaServo *_servos[];
 
+    bool _attached;
     uint8_t _pin;
     uint16_t _max, _min; // [us]
-    uint8_t _pwm_channel;
     double _pwm_frequency; // [Hz]
     uint8_t _pwm_resolution;
     uint16_t _max_duty_cyle;

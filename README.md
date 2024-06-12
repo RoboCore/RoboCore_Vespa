@@ -22,6 +22,7 @@ Documentation
 Version History
 ---------------
 
+* [v1.3.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.3.0) - Updated to be compatible with the Arduino ESP release 3.0.1.
 * [v1.2.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.2.0) - Updated <VespaBattery::attach()> to use <PULSE_WIDTH_MAX/MIN> by default.
 * [v1.1.0](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.1.0) - Updated <VespaBattery::readVoltage()> to always use the defined bit width.
 * [v1.0.1](https://github.com/RoboCore/RoboCore_Vespa/releases/tag/v1.0.1) - Minor bug fix in <VespaMotors>.

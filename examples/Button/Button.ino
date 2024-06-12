@@ -1,10 +1,10 @@
 /*******************************************************************************
-* RoboCore - Button (v1.0)
+* RoboCore - Button (v1.1)
 * 
 * Control the LED of the Vespa board using its button.
 * 
-* Copyright 2021 RoboCore.
-* Written by Francois (07/10/21).
+* Copyright 2024 RoboCore.
+* Written by Francois (12/06/2024).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -24,26 +24,28 @@
 *******************************************************************************/
 
 // --------------------------------------------------
+// Libraries
+
+#include <RoboCore_Vespa.h>
+
+// --------------------------------------------------
 // Variables
 
-const int PIN_LED = 15;
-const int PIN_BUTTON = 35;
+VespaButton button;
+VespaLED led;
 
 // --------------------------------------------------
 
 void setup() {
-  // configure the pins
-  pinMode(PIN_LED, OUTPUT);
-  pinMode(PIN_BUTTON, INPUT);
 }
 
 // --------------------------------------------------
 
 void loop() {
-  if(digitalRead(PIN_BUTTON) == LOW){ // button pressed
-    digitalWrite(PIN_LED, HIGH);
+  if (button.pressed()){
+    led.on();
   } else {
-    digitalWrite(PIN_LED, LOW);
+    led.off();
   }
 }
 

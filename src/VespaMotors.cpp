@@ -1,10 +1,9 @@
 /*******************************************************************************
-* RoboCore Vespa Motors Library (v1.2)
+* RoboCore Vespa Motors Library
 * 
 * Library to use the motors of the Vespa board.
 * 
 * Copyright 2024 RoboCore.
-* Written by Francois (25/10/2021).
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -22,6 +21,8 @@
 * You should have received a copy of the GNU Lesser General Public License
 * along with "RoboCore-Vespa-lib". If not, see <https://www.gnu.org/licenses/>
 *******************************************************************************/
+
+// Reference: https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
 
 // --------------------------------------------------
 // Libraries
@@ -66,8 +67,8 @@ VespaMotors::VespaMotors(void) :
 // Destructor
 VespaMotors::~VespaMotors(void){
   // detach the pins from the PWM
-  ledcDetachPin(*this->_active_pin_A);
-  ledcDetachPin(*this->_active_pin_B);
+  ledcDetach(*this->_active_pin_A);
+  ledcDetach(*this->_active_pin_B);
 
   // set all pins as inputs
   pinMode(this->_pinMA1, INPUT);
@@ -93,8 +94,8 @@ void VespaMotors::backward(uint8_t speed){
 
   this->_pwmA = map(speed, 0, 100, 0, this->_max_duty_cyle); // transform to the current configuration
   this->_pwmB = this->_pwmA;
-  ledcWrite(this->_pwm_channel_A, this->_pwmA); // update
-  ledcWrite(this->_pwm_channel_B, this->_pwmB); // update
+  ledcWrite(*this->_active_pin_A, this->_pwmA); // update
+  ledcWrite(*this->_active_pin_B, this->_pwmB); // update
 }
 
 // --------------------------------------------------
@@ -113,8 +114,8 @@ void VespaMotors::forward(uint8_t speed){
 
   this->_pwmA = map(speed, 0, 100, 0, this->_max_duty_cyle); // transform to the current configuration
   this->_pwmB = this->_pwmA;
-  ledcWrite(this->_pwm_channel_A, this->_pwmA); // update
-  ledcWrite(this->_pwm_channel_B, this->_pwmB); // update
+  ledcWrite(*this->_active_pin_A, this->_pwmA); // update
+  ledcWrite(*this->_active_pin_B, this->_pwmB); // update
 }
 
 // --------------------------------------------------
@@ -136,7 +137,7 @@ void VespaMotors::setSpeedLeft(int8_t speed){
   }
 
   this->_pwmA = map(speed, 0, 100, 0, this->_max_duty_cyle); // transform to the current configuration
-  ledcWrite(this->_pwm_channel_A, this->_pwmA); // update
+  ledcWrite(*this->_active_pin_A, this->_pwmA); // update
 }
 
 // --------------------------------------------------
@@ -158,7 +159,7 @@ void VespaMotors::setSpeedRight(int8_t speed){
   }
 
   this->_pwmB = map(speed, 0, 100, 0, this->_max_duty_cyle); // transform to the current configuration
-  ledcWrite(this->_pwm_channel_B, this->_pwmB); // update
+  ledcWrite(*this->_active_pin_B, this->_pwmB); // update
 }
 
 // --------------------------------------------------
@@ -168,8 +169,8 @@ void VespaMotors::stop(void){
   this->_pwmA = 0; // reset
   this->_pwmB = 0; // reset
 
-  ledcWrite(this->_pwm_channel_A, this->_pwmA); // update
-  ledcWrite(this->_pwm_channel_B, this->_pwmB); // update
+  ledcWrite(*this->_active_pin_A, this->_pwmA); // update
+  ledcWrite(*this->_active_pin_B, this->_pwmB); // update
 }
 
 // --------------------------------------------------
@@ -189,26 +190,77 @@ void VespaMotors::turn(int8_t speedA, int8_t speedB){
 
 // Attach a pin to the active PWM channel
 //  @param (pin) : the new pin to attach [uint8_t *]
+//  @returns true if successful [bool]
 //  Note: the current active pin is then set to LOW.
-void VespaMotors::_attachPin(uint8_t * pin){
+bool VespaMotors::_attachPin(uint8_t * pin){
   // check if is already the active pin
   if((pin == this->_active_pin_A) || (pin == this->_active_pin_B)){
-    return;
+    return false;
   }
+
+  bool res = false;
+
+  // Note: in Arduino ESP v3.0, the LEDC API has the <ledcAttach()> function
+  //       which selects the channel automatically. This functions doesn't
+  //       work properly with the motors because the pins are frequently
+  //       attached and detached from the channels. The solution is to
+  //       use fixed channels, but it might interfere with other devices
+  //       that use the API.
 
   // motor A
   if((pin == &this->_pinMA1) || (pin == &this->_pinMA2)){
-    ledcDetachPin(*this->_active_pin_A);
-    digitalWrite(*this->_active_pin_A, LOW);
+    if (this->_active_pin_A != nullptr){
+      ledcDetach(*this->_active_pin_A);
+      digitalWrite(*this->_active_pin_A, LOW);
+    }
     this->_active_pin_A = pin;
-    ledcAttachPin(*this->_active_pin_A, this->_pwm_channel_A);
+    //res = ledcAttach(*this->_active_pin_A, this->_pwm_frequency, this->_pwm_resolution);
+    res = ledcAttachChannel(*this->_active_pin_A, this->_pwm_frequency, this->_pwm_resolution, this->_pwm_channel_A);
   }
   // motor B
   if((pin == &this->_pinMB1) || (pin == &this->_pinMB2)){
-    ledcDetachPin(*this->_active_pin_B);
-    digitalWrite(*this->_active_pin_B, LOW);
+    if (this->_active_pin_B != nullptr){
+      ledcDetach(*this->_active_pin_B);
+      digitalWrite(*this->_active_pin_B, LOW);
+    }
     this->_active_pin_B = pin;
-    ledcAttachPin(*this->_active_pin_B, this->_pwm_channel_B);
+    //res = ledcAttach(*this->_active_pin_B, this->_pwm_frequency, this->_pwm_resolution);
+    res = ledcAttachChannel(*this->_active_pin_B, this->_pwm_frequency, this->_pwm_resolution, this->_pwm_channel_B);
+  }
+
+  return res;
+}
+
+// --------------------------------------------------
+
+// Configure the PWM channels
+//  @returns true if successful [bool]
+//  Note: the pins are detached if unsuccessful.
+bool VespaMotors::_configurePWM(void){
+  // calculate the maximum duty cycle
+  this->_max_duty_cyle = (uint16_t)(pow(2, this->_pwm_resolution) - 1);
+
+  // reset the default attached pins
+  this->_active_pin_A = nullptr;
+  this->_active_pin_B = nullptr;
+
+  // attach the pins
+  // (the channels are selected automatically)
+  uint8_t attached = 0x00;
+  attached |= (this->_attachPin(&this->_pinMA1)) ? 0x01 : 0x00;
+  attached |= (this->_attachPin(&this->_pinMB1)) ? 0x02 : 0x00;
+
+  if (attached == 0x03){
+    return true;
+  } else {
+    if (attached & 0x01){
+      ledcDetach(*this->_active_pin_A);
+    }
+    if (attached & 0x02){
+      ledcDetach(*this->_active_pin_B);
+    }
+
+    return false;
   }
 }
 
@@ -234,24 +286,6 @@ void VespaMotors::_setDirectionRight(uint8_t direction){
   } else {
     this->_attachPin(&this->_pinMB2);
   }
-}
-
-// --------------------------------------------------
-
-// Configure the PWM channels
-void VespaMotors::_configurePWM(void){
-  // configure the channels and timers (use the same frequency)
-  this->_pwm_frequency = ledcSetup(this->_pwm_channel_A, this->_pwm_frequency, this->_pwm_resolution);
-  this->_pwm_frequency = ledcSetup(this->_pwm_channel_B, this->_pwm_frequency, this->_pwm_resolution);
-
-  // calculate the maximum duty cycle
-  this->_max_duty_cyle = (uint16_t)(pow(2, this->_pwm_resolution) - 1);
-
-  // attach the pins
-  this->_active_pin_A = &this->_pinMA1;
-  this->_active_pin_B = &this->_pinMB1;
-  ledcAttachPin(*this->_active_pin_A, this->_pwm_channel_A);
-  ledcAttachPin(*this->_active_pin_B, this->_pwm_channel_B);
 }
 
 // --------------------------------------------------

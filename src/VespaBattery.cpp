@@ -1,11 +1,10 @@
 /*******************************************************************************
-* RoboCore Vespa Battery Library (v1.2)
+* RoboCore Vespa Battery Library
 * 
 * Library to read the battery voltage of the Vespa board.
 * 
 * Copyright 2024 RoboCore.
-* Written by Francois (03/12/2021).
-* Based on the example from @DaveCalaway (https://github.com/espressif/arduino-esp32/issues/1804)
+* [v1.0] Based on the example from @DaveCalaway (https://github.com/espressif/arduino-esp32/issues/1804)
 * 
 * 
 * This file is part of the Vespa library by RoboCore ("RoboCore-Vespa-lib").
@@ -24,30 +23,21 @@
 * along with "RoboCore-Vespa-lib". If not, see <https://www.gnu.org/licenses/>
 *******************************************************************************/
 
+// References
+//  - https://docs.espressif.com/projects/arduino-esp32/en/latest/api/adc.html
+//  - https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc_oneshot.html
+//  - https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc_calibration.html
+
 // --------------------------------------------------
 // Libraries
 
 #include "RoboCore_Vespa.h"
-
-extern "C" {
-  #include <soc/sens_reg.h>
-}
 
 // --------------------------------------------------
 // --------------------------------------------------
 
 // Constructor (default)
 VespaBattery::VespaBattery(void) :
-  VespaBattery(1100) // call the main constructor (default Vref = 1100 mV)
-{
-  // nothing to do here
-}
-
-// --------------------------------------------------
-
-// Constructor
-//  @param (vref) : the reference voltage for the ADC calibration [uint32_t]
-VespaBattery::VespaBattery(uint32_t vref) :
   _pin(VESPA_BATTERY_PIN),
   _battery_type(BATTERY_UNDEFINED),
   handler_critical(nullptr)
@@ -57,54 +47,25 @@ VespaBattery::VespaBattery(uint32_t vref) :
 
   // configure the ADC
   /*
-   * 4095 for 12-bits -> VDD_A / 4095 = 805uV  too jittery
-   * 2048 for 11-bits -> 3.9 / 2048 = 1.9mV looks fine
-   * 
-   * The maximum voltage is limited by VDD_A
-   *  - 0dB attenuaton (ADC_ATTEN_DB_0) gives full-scale voltage 1.1V
-   *  - 2.5dB attenuation (ADC_ATTEN_DB_2_5) gives full-scale voltage 1.5V
-   *  - 6dB attenuation (ADC_ATTEN_DB_6) gives full-scale voltage 2.2V
-   *  - 11dB attenuation (ADC_ATTEN_DB_11) gives full-scale voltage 3.9V
-   */
-  adc1_config_width(VESPA_BATTERY_ADC_WIDTH);
-  adc1_config_channel_atten(VESPA_BATTERY_ADC_CHANNEL, VESPA_BATTERY_ADC_ATTENUATION);
-  
-  // create a new characteristics object
-  this->_adc_characteristics = new esp_adc_cal_characteristics_t;
-
-  // configure the ADC characteristics
-  this->_adc_calibration_type = esp_adc_cal_characterize(VESPA_BATTERY_ADC_UNIT, VESPA_BATTERY_ADC_ATTENUATION, VESPA_BATTERY_ADC_WIDTH, vref, this->_adc_characteristics);
+  * For the ESP32
+  *   - ADC_ATTEN_DB_0 gives 100 mV ~ 950 mV
+  *   - ADC_ATTEN_DB_2_5 gives 100 mV ~ 1250 mV
+  *   - ADC_ATTEN_DB_6 gives 150 mV ~ 1750 mV
+  *   - ADC_ATTEN_DB_11 gives 150 mV ~ 3100 mV
+  * 
+  * Note: 11 db attenuation is deprecated in ESP IDF v5.2.2.
+  */
+  analogSetPinAttenuation(this->_pin, VESPA_BATTERY_ADC_ATTENUATION);
 }
 
 // --------------------------------------------------
 
 // Destructor
 VespaBattery::~VespaBattery(void){
-  // free the characteristics pointer
-  delete this->_adc_characteristics;
+  // nothing to do here
 }
 
 // --------------------------------------------------
-// --------------------------------------------------
-
-// Get the calibration type of the ADC
-//  @returns the calibration type [uint8_t]
-//  Note: from <esp_adc_cal.h>
-//        0 > eFuse Vref
-//        1 > eFuse Two Point
-//        2 > default Vref
-//        3 > eFuse Two Point Fit
-uint8_t VespaBattery::getCalibrationType(void){
-  return static_cast<uint8_t> (this->_adc_calibration_type);
-}
-// --------------------------------------------------
-
-// Get the reference voltage for the ADC (in mV)
-//  @returns the reference voltage [uint32_t]
-uint32_t VespaBattery::getReferenceVoltage(void){
-  return this->_adc_characteristics->vref;
-}
-
 // --------------------------------------------------
 
 // Read the remaining capacity of the battery
@@ -169,35 +130,10 @@ uint8_t VespaBattery::readCapacity(void){
 // Read the voltage of the battery (in mV)
 //  @returns the voltage of the battery (in mV) [uint32_t]
 uint32_t VespaBattery::readVoltage(void){
-  // get the current ADC configuration
-  uint32_t adc1_ctrl_register = READ_PERI_REG(SENS_SAR_READ_CTRL_REG);
-  uint32_t adc1_bit_width = adc1_ctrl_register & 0x00030000; // get the current bit width
-  adc1_bit_width >>= 16; // convert to LSB[0:1]
-
-  // set the ADC to the bit width for the Vespa
-  adc1_config_width(VESPA_BATTERY_ADC_WIDTH);
-
-  // read the analog pin
-  int32_t value = adc1_get_raw(VESPA_BATTERY_ADC_CHANNEL);
-
-  // Note: the analog pin can be read with <analogRead()>, but it
-  //       requires the resolution to be configured accordingly
-  //       with <analogReadResolution()>, otherwise the result
-  //       can be misinterpreted.
-
-  // check the value read
-  if(value < 0){
-    return 0;
-  }
-  
-  // Note: although <esp_adc_cal_get_voltage()> would be a better fit, it is best to use <adc1_channel_t>
-  //       instead of <adc_channel_t>. therefore <esp_adc_cal_raw_to_voltage()> is used.
-  uint32_t voltage = esp_adc_cal_raw_to_voltage(value, this->_adc_characteristics);
-  voltage *= VESPA_BATTERY_VOLTAGE_CONVERSION; // convert the value considering the internal circuit
+  // convert the voltage based on the circuit factor
+  uint32_t voltage = analogReadMilliVolts(this->_pin);
+  voltage *= VESPA_BATTERY_VOLTAGE_CONVERSION;
   voltage /= 1000;
-
-  // return the ADC to the previous configuration
-  adc1_config_width((adc_bits_width_t)adc1_bit_width);
 
   return voltage;
 }
